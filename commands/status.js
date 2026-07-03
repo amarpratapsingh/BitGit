@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
-import { readIndex, readObject, getCurrBranch, getCommitTree } from '../util/fs.js'
+import { readIndex, readObject, getCurrBranch, getCommitTree, getBgDir } from '../util/fs.js'
 
 export async function status()
 {
@@ -92,9 +92,15 @@ export async function status()
     const tracked = new Set(Object.keys(index))
     const untracked = []
     const dir = await fs.readdir(process.cwd())
+    const bareRoot = await getBgDir()
+    const isBare = bareRoot === process.cwd()
     for(const entry of dir)
     {
         if(entry.startsWith('.bg') || entry.startsWith('.'))
+        {
+            continue
+        }
+        if(isBare && (entry === 'HEAD' || entry === 'objects' || entry === 'refs' || entry === 'index.json' || entry === 'config.json'))
         {
             continue
         }

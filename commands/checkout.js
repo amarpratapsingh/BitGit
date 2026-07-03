@@ -1,10 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
-import { readObject, readIndex, getHeadRef, getCurrBranch } from '../util/fs.js'
-
-const BG_DIR = path.join(process.cwd(), '.bg')
-const REFS_DIR = path.join(BG_DIR, 'refs', 'head')
+import { readObject, readIndex, getHeadRef, getCurrBranch, getBgDir } from '../util/fs.js'
 
 async function hasUnstagedChanges()
 {
@@ -30,6 +27,7 @@ async function hasUnstagedChanges()
 
 async function restoreWorkingTree(commitHash)
 {
+    const bgDir = await getBgDir()
     const commit = await readObject(commitHash)
     const treeHash = commit.match(/^tree: (.+)/m)?.[1]
     if(!treeHash)
@@ -45,18 +43,20 @@ async function restoreWorkingTree(commitHash)
         await fs.writeFile(path.join(process.cwd(), file), content)
     }
 
-    const indexPath = path.join(BG_DIR, 'index.json')
+    const indexPath = path.join(bgDir, 'index.json')
     await fs.writeFile(indexPath, JSON.stringify(tree, null, 2))
 }
 
 async function updateHead(branchName)
 {
-    await fs.writeFile(path.join(BG_DIR, 'HEAD'), `ref: refs/head/${branchName}\n`)
+    const bgDir = await getBgDir()
+    await fs.writeFile(path.join(bgDir, 'HEAD'), `ref: refs/head/${branchName}\n`)
 }
 
 export async function switchBranch(name)
 {
-    const branchPath = path.join(REFS_DIR, name)
+    const refsDir = path.join(await getBgDir(), 'refs', 'head')
+    const branchPath = path.join(refsDir, name)
     try
     {
         await fs.access(branchPath)
@@ -88,7 +88,8 @@ export async function switchBranch(name)
 
 export async function createAndSwitch(name)
 {
-    const branchPath = path.join(REFS_DIR, name)
+    const refsDir = path.join(await getBgDir(), 'refs', 'head')
+    const branchPath = path.join(refsDir, name)
     try
     {
         await fs.access(branchPath)
@@ -97,6 +98,12 @@ export async function createAndSwitch(name)
     }
     catch
     {}
+
+    if(await hasUnstagedChanges())
+    {
+        console.error('Error: you have unstaged changes. Commit or stash them before switching branches')
+        process.exit(1)
+    }
 
     const { parentHash } = await getHeadRef();
     if(!parentHash)

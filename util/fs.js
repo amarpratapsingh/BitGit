@@ -2,14 +2,40 @@ import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
-const BG_DIR = path.join(process.cwd(), '.bg')
-
-export const verifyRepo = async(dir) =>
+export async function getBgDir()
 {
-    return fs.access(dir).catch(() =>
+    const dotBg = path.join(process.cwd(), '.bg')
+    try
+    {
+        await fs.access(dotBg)
+        return dotBg
+    }
+    catch
+    {
+        try
+        {
+            await fs.access(path.join(process.cwd(), 'HEAD'))
+            await fs.access(path.join(process.cwd(), 'objects'))
+            return process.cwd()
+        }
+        catch
+        {
+            return dotBg
+        }
+    }
+}
+
+export const verifyRepo = async() =>
+{
+    const dir = await getBgDir()
+    try
+    {
+        await fs.access(dir)
+    }
+    catch
     {
         throw new Error('NOT_A_REPO');
-    });
+    }
 }
 export const verifyTrack = (index, file) =>
 {
@@ -28,12 +54,13 @@ export const dropFile = async(file) =>
 
 export async function hashAndStore(content)
 {
+    const bgDir = await getBgDir()
     const hash = crypto.createHash('sha1').update(content).digest('hex');
 
     const dirName = hash.substring(0,2);
     const fileName = hash.substring(2)
 
-    const objectDir = path.join(BG_DIR, 'objects', dirName)
+    const objectDir = path.join(bgDir, 'objects', dirName)
     const objectPath = path.join(objectDir, fileName)
 
     await fs.mkdir(objectDir, { recursive: true })
@@ -44,16 +71,18 @@ export async function hashAndStore(content)
 
 export async function readObject(hash)
 {
+    const bgDir = await getBgDir()
     const dirName = hash.substring(0,2)
     const fileName = hash.substring(2)
-    const objectPath = path.join(BG_DIR, 'objects', dirName, fileName)
+    const objectPath = path.join(bgDir, 'objects', dirName, fileName)
 
     return await fs.readFile(objectPath, 'utf-8')
 }
 
 export async function readIndex()
 {
-    const indexPath = path.join(BG_DIR, 'index.json')
+    const bgDir = await getBgDir()
+    const indexPath = path.join(bgDir, 'index.json')
     try
     {
         const data = await fs.readFile(indexPath, 'utf-8')
@@ -71,18 +100,20 @@ export async function readIndex()
 
 export async function writeIndex(indexData)
 {
-    const indexPath = path.join(BG_DIR, 'index.json')
+    const bgDir = await getBgDir()
+    const indexPath = path.join(bgDir, 'index.json')
     await fs.writeFile(indexPath, JSON.stringify(indexData, null, 2))
 }
 
 export async function getHeadRef()
 {
+    const bgDir = await getBgDir()
     try
     {
-        const headContent = await fs.readFile(path.join(BG_DIR, 'HEAD'), 'utf-8')
+        const headContent = await fs.readFile(path.join(bgDir, 'HEAD'), 'utf-8')
 
         const refPath = headContent.replace('ref:', '').trim();
-        const branchPath = path.join(BG_DIR, refPath);
+        const branchPath = path.join(bgDir, refPath);
 
         let parentHash = null
         try
@@ -112,7 +143,8 @@ export async function createTreeObject()
 
 export async function getCurrBranch()
 {
-    const headContent = await fs.readFile(path.join(BG_DIR, 'HEAD'), 'utf-8')
+    const bgDir = await getBgDir()
+    const headContent = await fs.readFile(path.join(bgDir, 'HEAD'), 'utf-8')
     const match = headContent.match(/^ref:\s*refs\/head\/(\S+)/)
     if(!match)
     {
@@ -123,7 +155,8 @@ export async function getCurrBranch()
 
 export async function readRef(branchName)
 {
-    const refPath = path.join(BG_DIR, 'refs', 'head', branchName)
+    const bgDir = await getBgDir()
+    const refPath = path.join(bgDir, 'refs', 'head', branchName)
     return (await fs.readFile(refPath, 'utf-8')).trim()
 }
 

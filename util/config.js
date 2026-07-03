@@ -1,14 +1,14 @@
 import fs from 'fs/promises'
 import path from 'path'
-
-const BG_DIR = path.join(process.cwd(), '.bg')
-const CONFIG_PATH = path.join(BG_DIR, 'config.json')
+import { getBgDir } from './fs.js'
 
 export async function readConfig()
 {
+    const bgDir = await getBgDir()
+    const configPath = path.join(bgDir, 'config.json')
     try
     {
-        return JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'))
+        return JSON.parse(await fs.readFile(configPath, 'utf-8'))
     }
     catch
     {
@@ -18,5 +18,7 @@ export async function readConfig()
 
 export async function writeConfig(config)
 {
-    await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2))
+    const bgDir = await getBgDir()
+    const configPath = path.join(bgDir, 'config.json')
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2))
 }

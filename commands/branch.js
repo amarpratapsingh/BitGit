@@ -1,16 +1,14 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { getHeadRef, getCurrBranch } from '../util/fs.js'
-
-const BG_DIR = path.join(process.cwd(), '.bg')
-const REFS_DIR = path.join(BG_DIR, 'refs', 'head')
+import { getHeadRef, getCurrBranch, getBgDir } from '../util/fs.js'
 
 export async function listBranches()
 {
+    const refsDir = path.join(await getBgDir(), 'refs', 'head')
     let branches
     try
     {
-        branches = await fs.readdir(REFS_DIR)
+        branches = await fs.readdir(refsDir)
     }
     catch
     {
@@ -28,10 +26,11 @@ export async function listBranches()
 
 export async function createBranch(name)
 {
+    const refsDir = path.join(await getBgDir(), 'refs', 'head')
     let branches
     try
     {
-        branches = await fs.readdir(REFS_DIR)
+        branches = await fs.readdir(refsDir)
     }
     catch
     {
@@ -50,12 +49,13 @@ export async function createBranch(name)
         process.exit(1)
     }
 
-    await fs.writeFile(path.join(REFS_DIR, name), parentHash + '\n')
+    await fs.writeFile(path.join(refsDir, name), parentHash + '\n')
     console.log(`Created branch '${name}'`)
 }
 
 export async function deleteBranch(name)
 {
+    const refsDir = path.join(await getBgDir(), 'refs', 'head')
     const current = await getCurrBranch()
     if(name === current)
     {
@@ -63,6 +63,6 @@ export async function deleteBranch(name)
         process.exit(1)
     }
 
-    await fs.unlink(path.join(REFS_DIR, name))
+    await fs.unlink(path.join(refsDir, name))
     console.log(`Deleted branch '${name}'`)
 }

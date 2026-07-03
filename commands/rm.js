@@ -1,12 +1,11 @@
 import path from 'path'
-import { readIndex, writeIndex, verifyRepo, verifyTrack, dropFile } from '../util/fs.js';
+import { readIndex, writeIndex, verifyRepo, verifyTrack, dropFile, getBgDir } from '../util/fs.js';
 
 export async function rm(fileName)
 {
-    const BG_DIR = path.join(process.cwd(), '.bg');
     try
     {
-        await verifyRepo(BG_DIR)
+        await verifyRepo()
         const index = await readIndex();
         verifyTrack(index, fileName);
 

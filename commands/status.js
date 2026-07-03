@@ -5,7 +5,31 @@ import { readIndex, readObject, getCurrBranch, getCommitTree, getBgDir } from '.
 
 export async function status()
 {
-    const branch = await getCurrBranch().catch(() => 'main')
+    let branch
+    try
+    {
+        branch = await getCurrBranch()
+    }
+    catch
+    {
+        try
+        {
+            const headContent = await fs.readFile(path.join(await getBgDir(), 'HEAD'), 'utf-8')
+            const trimmed = headContent.trim()
+            if(/^[0-9a-f]{40}$/.test(trimmed))
+            {
+                branch = `HEAD detached at ${trimmed.substring(0, 7)}`
+            }
+            else
+            {
+                branch = 'HEAD (unknown)'
+            }
+        }
+        catch
+        {
+            branch = 'main'
+        }
+    }
     console.log(`On branch ${branch}\n`)
 
     const tree = await getCommitTree()

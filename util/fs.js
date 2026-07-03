@@ -28,7 +28,7 @@ export const dropFile = async(file) =>
 
 export async function hashAndStore(content)
 {
-    const hash = crypto.hash('sha1', content, 'hex');
+    const hash = crypto.createHash('sha1').update(content).digest('hex');
 
     const dirName = hash.substring(0,2);
     const fileName = hash.substring(2)

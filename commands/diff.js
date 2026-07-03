@@ -75,7 +75,7 @@ export async function diff()
             continue
         }
 
-        const newHash = crypto.hash('sha1', currentContent, 'hex')
+        const newHash = crypto.createHash('sha1').update(currentContent).digest('hex')
         if(newHash === hash)
         {
             continue

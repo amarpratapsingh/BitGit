@@ -20,7 +20,7 @@ async function hasUnstagedChanges()
         {
             return true
         }
-        if(crypto.hash('sha1', content, 'hex') !== hash)
+        if(crypto.createHash('sha1').update(content).digest('hex') !== hash)
         {
             return true
         }
